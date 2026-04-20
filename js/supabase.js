@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://tzcwspaznhmwsrbghszd.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6Y3dzcGF6bmhtd3NyYmdoc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MzU3MjMsImV4cCI6MjA5MTExMTcyM30.MI6dKsWP08mKVVgt8nHdf8-iVQczkDguTNiqq3gEeY8';
+const SUPABASE_ANON_KEY = 'sb_publishable_bGmsLaDYDY-w5SCF-wdF6Q_3fIRVrKg';
 let _sb = null;
 function sb() { if(!_sb) _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); return _sb; }
 

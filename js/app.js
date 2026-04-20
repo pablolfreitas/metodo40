@@ -49,7 +49,10 @@ async function afterLogin(){
       await loadDashboard();
       showPage('dashboard');
     }
-  }catch(e){console.error('afterLogin:',e);toast('Erro ao carregar dados.')}
+  }catch(e){
+    console.error('afterLogin:',e);
+    toast(e?.message ? `Erro ao carregar dados: ${e.message}` : 'Erro ao carregar dados.');
+  }
 }
 
 // ==== PAGES ====
@@ -78,7 +81,17 @@ async function login(e){
   errEl.classList.remove('show');
   const btn=document.getElementById('login-btn');
   btn.textContent='Entrando...';btn.disabled=true;
-  try{await DB.signIn(email,pass);}catch(err){
+  try{
+    const data=await DB.signIn(email,pass);
+    const user=data?.session?.user||data?.user||null;
+
+    // Nao dependa apenas do evento de auth para seguir a navegacao.
+    if(user){
+      S.user=user;
+      await afterLogin();
+    }
+  }catch(err){
+    console.error('login:',err);
     errEl.textContent=err.message?.includes('Invalid')?'Email ou senha incorretos.':(err.message||'Erro ao entrar.');
     errEl.classList.add('show');btn.textContent='Entrar';btn.disabled=false;
   }
