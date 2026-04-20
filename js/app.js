@@ -20,6 +20,12 @@ const WD=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira'
 const MN=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const td=()=>new Date().toISOString().split('T')[0];
 const fmtDate=d=>`${WD[d.getDay()]}, ${d.getDate()} de ${MN[d.getMonth()]}`;
+function setLoginBusy(isBusy){
+  const btn=document.getElementById('login-btn');
+  if(!btn) return;
+  btn.textContent=isBusy?'Entrando...':'Entrar';
+  btn.disabled=!!isBusy;
+}
 
 // ==== INIT ====
 async function init(){
@@ -44,13 +50,17 @@ async function afterLogin(){
 
     if(!S.settings||!S.settings.workout_template_id){
       buildSetup();
+      setLoginBusy(false);
       showPage('setup');
     } else {
       await loadDashboard();
+      setLoginBusy(false);
       showPage('dashboard');
     }
   }catch(e){
     console.error('afterLogin:',e);
+    setLoginBusy(false);
+    showPage('login');
     toast(e?.message ? `Erro ao carregar dados: ${e.message}` : 'Erro ao carregar dados.');
   }
 }
@@ -79,8 +89,7 @@ async function login(e){
   const pass=document.getElementById('login-password').value;
   const errEl=document.getElementById('login-error');
   errEl.classList.remove('show');
-  const btn=document.getElementById('login-btn');
-  btn.textContent='Entrando...';btn.disabled=true;
+  setLoginBusy(true);
   try{
     const data=await DB.signIn(email,pass);
     const user=data?.session?.user||data?.user||null;
@@ -93,7 +102,8 @@ async function login(e){
   }catch(err){
     console.error('login:',err);
     errEl.textContent=err.message?.includes('Invalid')?'Email ou senha incorretos.':(err.message||'Erro ao entrar.');
-    errEl.classList.add('show');btn.textContent='Entrar';btn.disabled=false;
+    errEl.classList.add('show');
+    setLoginBusy(false);
   }
 }
 async function logout(){await DB.signOut();S.user=null;S.settings=null;S.progress.clear();showPage('login');toast('Até logo! 👋');}
