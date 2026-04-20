@@ -248,11 +248,6 @@ async function changePass(){
   if(!pass||pass.length<6){toast('Senha deve ter no mínimo 6 caracteres.');return;}
   try{await DB.updatePassword(pass);document.getElementById('sett-newpass').value='';toast('Senha alterada! 🔐');}catch(e){toast('Erro ao alterar senha.');}
 }
-async function resetProgress(){
-  if(!confirm('Tem certeza? Todo o progresso será apagado.'))return;
-  try{await DB.resetAllProgress(S.user.id);S.progress.clear();applyDoneStates();updateProgress();toast('Progresso resetado.');}catch(e){toast('Erro ao resetar.');}
-}
-
 // ==== ADMIN ====
 async function loadAdmin(){
   const body=document.getElementById('admin-body');
@@ -317,5 +312,5 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(ni) ni.addEventListener('input',updateSetupBtn);
 });
 
-window.App={login,logout,showPage,nav,selectLevel,selectProg:selectProg,selectMeal,saveSetup,goSetup,toggle,toast,sendMsg,saveName,changePass,resetProgress,loadAdmin,openStudent,adminSendMsg,backToList,filterStudents};
+window.App={login,logout,showPage,nav,selectLevel,selectProg:selectProg,selectMeal,saveSetup,goSetup,toggle,toast,sendMsg,saveName,changePass,loadAdmin,openStudent,adminSendMsg,backToList,filterStudents};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

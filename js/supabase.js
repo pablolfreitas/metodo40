@@ -62,10 +62,6 @@ window.DB = {
   removeProgress: async (uid, date, type, key) => {
     await sb().from('daily_progress').delete().eq('user_id',uid).eq('tracking_date',date).eq('item_type',type).eq('item_key',key);
   },
-  resetAllProgress: async (uid) => {
-    await sb().from('daily_progress').delete().eq('user_id', uid);
-  },
-
   // Messages
   getMessages: async (uid) => {
     const { data } = await sb().from('messages').select('*').eq('user_id',uid).order('created_at',{ascending:true});
