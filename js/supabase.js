@@ -38,8 +38,14 @@ window.DB = {
     return plans.map(p=>({...p, meals: (meals||[]).filter(m=>m.meal_plan_id===p.id)}));
   },
   getSettings: async (uid) => {
-    const { data } = await sb().from('user_settings').select('*').eq('user_id', uid).maybeSingle();
-    return data;
+    const { data, error } = await sb()
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', uid)
+      .order('updated_at', { ascending: false })
+      .limit(1);
+    if(error) throw error;
+    return data?.[0] || null;
   },
   saveSettings: async (uid, tid, mpid, name) => {
     const obj = { user_id:uid, workout_template_id:tid, meal_plan_id:mpid, updated_at:new Date().toISOString() };
