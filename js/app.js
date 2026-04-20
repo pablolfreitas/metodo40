@@ -3,7 +3,8 @@ const S = {
   user:null, settings:null, templates:[], mealPlans:[],
   selectedLevel:'beginner', selectedTemplate:null, selectedMealPlan:null,
   workoutDays:[], todaySlots:[], todayMeals:[], progress:new Set(),
-  isAdmin:false, adminStudents:[], adminSelectedUser:null
+  isAdmin:false, adminStudents:[], adminSelectedUser:null,
+  selectedWorkoutDayId:null, todayWorkoutDayId:null, daySlotsById:{}
 };
 
 const LL = {beginner:'Iniciante',intermediate:'Intermediário',advanced:'Avançado'};
@@ -96,6 +97,13 @@ function nav(page){
   showPage(page);
 }
 
+function getTodayWorkoutDay(tpl, now){
+  const dow=now.getDay();
+  const sch=SCHED[tpl.days_per_week]||SCHED[3];
+  const wi=sch[dow];
+  return wi!==undefined ? (S.workoutDays[wi]||null) : null;
+}
+
 // ==== LOGIN ====
 async function login(e){
   e.preventDefault();
@@ -163,14 +171,14 @@ async function loadDashboard(){
   if(tpl){
     document.getElementById('dash-program-badge').textContent=tpl.name;
     S.workoutDays=await DB.getTemplateDays(tpl.id);
-    const dow=now.getDay();
-    const sch=SCHED[tpl.days_per_week]||SCHED[3];
-    const wi=sch[dow];
-    if(wi!==undefined&&S.workoutDays[wi]){
-      const day=S.workoutDays[wi];
-      S.todaySlots=await DB.getDaySlots(day.id);
-      renderWorkout(day);
-    }else{S.todaySlots=[];renderRest();}
+    const todayDay=getTodayWorkoutDay(tpl,now);
+    S.todayWorkoutDayId=todayDay?.id||null;
+    if(!S.workoutDays.some(d=>d.id===S.selectedWorkoutDayId)){
+      S.selectedWorkoutDayId=S.todayWorkoutDayId||null;
+    }
+    renderWorkoutDayTabs();
+    if(S.selectedWorkoutDayId) await loadWorkoutDayById(S.selectedWorkoutDayId);
+    else {S.todaySlots=[];renderRest();}
   }
 
   const mp=S.mealPlans.find(p=>p.id===S.settings.meal_plan_id);
@@ -178,6 +186,34 @@ async function loadDashboard(){
 
   try{const prog=await DB.getProgress(S.user.id,td());S.progress=new Set(prog.map(p=>`${p.item_type}:${p.item_key}`));}catch{S.progress=new Set();}
   applyDoneStates();updateProgress();
+}
+
+function renderWorkoutDayTabs(){
+  const el=document.getElementById('wk-day-tabs');
+  if(!el) return;
+  if(!S.workoutDays.length){ el.innerHTML=''; return; }
+  el.innerHTML=S.workoutDays.map(day=>{
+    const active=day.id===S.selectedWorkoutDayId?'active':'';
+    const today=day.id===S.todayWorkoutDayId?'today':'';
+    const label=day.id===S.todayWorkoutDayId?'Hoje':`Dia ${day.day_number}`;
+    return `<button class="wk-day-tab ${active} ${today}" onclick="App.selectWorkoutDay('${day.id}')"><small>${label}</small><strong>${day.name}</strong></button>`;
+  }).join('');
+}
+
+async function loadWorkoutDayById(dayId){
+  const day=S.workoutDays.find(d=>d.id===dayId);
+  if(!day){ renderRest(); return; }
+  S.selectedWorkoutDayId=dayId;
+  renderWorkoutDayTabs();
+  if(!S.daySlotsById[dayId]) S.daySlotsById[dayId]=await DB.getDaySlots(dayId);
+  S.todaySlots=S.daySlotsById[dayId];
+  renderWorkout(day);
+}
+
+async function selectWorkoutDay(dayId){
+  await loadWorkoutDayById(dayId);
+  applyDoneStates();
+  updateProgress();
 }
 
 function renderMeals(){
@@ -188,7 +224,8 @@ function renderMeals(){
 }
 
 function renderWorkout(day){
-  document.getElementById('wk-title').textContent='💪 Treino do Dia';
+  const isToday=day.id===S.todayWorkoutDayId;
+  document.getElementById('wk-title').textContent=isToday?'💪 Treino do Dia':'💪 Seus Treinos';
   let h=`<div class="wk-day-hdr"><h4>${day.name}</h4><p>${day.notes||''}</p></div>`;
   h+=S.todaySlots.filter(s=>s.exercise).map(s=>{
     const ex=s.exercise;const k=`exercise:${s.id}`;const d=S.progress.has(k);
@@ -331,5 +368,5 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(ni) ni.addEventListener('input',updateSetupBtn);
 });
 
-window.App={login,logout,showPage,nav,selectLevel,selectProg:selectProg,selectMeal,saveSetup,goSetup,toggle,toast,sendMsg,saveName,changePass,loadAdmin,openStudent,adminSendMsg,backToList,filterStudents};
+window.App={login,logout,showPage,nav,selectLevel,selectProg:selectProg,selectMeal,saveSetup,goSetup,toggle,toast,sendMsg,saveName,changePass,loadAdmin,openStudent,adminSendMsg,backToList,filterStudents,selectWorkoutDay};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

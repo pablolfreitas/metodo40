@@ -84,6 +84,13 @@ input,textarea{font-family:inherit}
 .dash-body{padding:20px 16px;padding-bottom:calc(80px + var(--safe-b));flex:1}
 .dash-sec{margin-bottom:24px}
 .dash-sec-title{font-size:1.02rem;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px;color:var(--accent);font-family:'Playfair Display',serif}
+.wk-day-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;margin-bottom:10px;scrollbar-width:none}
+.wk-day-tabs::-webkit-scrollbar{display:none}
+.wk-day-tab{min-width:96px;background:var(--surface);border:1.5px solid var(--border-s);border-radius:var(--rs);padding:10px 12px;text-align:left;box-shadow:var(--shadow);transition:all .2s;cursor:pointer}
+.wk-day-tab.active{background:var(--primary-sub);border-color:var(--primary)}
+.wk-day-tab.today{border-color:rgba(184,129,111,.45)}
+.wk-day-tab small{display:block;font-size:.7rem;color:var(--text-lt);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.wk-day-tab strong{display:block;font-size:.82rem;line-height:1.25;color:var(--accent)}
 
 /* Meals */
 .meal-item{background:var(--surface);border-radius:var(--rs);padding:12px 14px;margin-bottom:6px;box-shadow:var(--shadow);display:flex;align-items:flex-start;gap:10px;cursor:pointer;transition:background .2s;border-left:3px solid var(--border-s)}
