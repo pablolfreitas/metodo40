@@ -4,11 +4,12 @@ const S = {
   selectedLevel:'beginner', selectedTemplate:null, selectedMealPlan:null,
   workoutDays:[], todaySlots:[], todayMeals:[], progress:new Set(),
   isAdmin:false, adminStudents:[], adminSelectedUser:null,
-  selectedWorkoutDayId:null, todayWorkoutDayId:null, daySlotsById:{}
+  selectedDateKey:null, weekDates:[], daySlotsById:{}
 };
 
 const LL = {beginner:'Iniciante',intermediate:'Intermediário',advanced:'Avançado'};
 const SCHED = {3:{1:0,3:1,5:2}, 4:{1:0,2:1,4:2,5:3}, 5:{1:0,2:1,3:2,4:3,5:4}};
+const WDSHORT=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
 const MOT = [
   {min:0,max:0,i:'💪',t:'Cada dia é uma nova chance. Vamos lá!'},
   {min:1,max:25,i:'🌱',t:'O primeiro passo é o mais importante. Continue!'},
@@ -19,7 +20,8 @@ const MOT = [
 ];
 const WD=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
 const MN=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const td=()=>new Date().toISOString().split('T')[0];
+const dateKey=(d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const td=()=>dateKey(new Date());
 const fmtDate=d=>`${WD[d.getDay()]}, ${d.getDate()} de ${MN[d.getMonth()]}`;
 let authSyncId = 0;
 function setLoginBusy(isBusy){
@@ -97,11 +99,27 @@ function nav(page){
   showPage(page);
 }
 
-function getTodayWorkoutDay(tpl, now){
-  const dow=now.getDay();
+function getWorkoutDayForDate(tpl, date){
+  const dow=date.getDay();
   const sch=SCHED[tpl.days_per_week]||SCHED[3];
   const wi=sch[dow];
   return wi!==undefined ? (S.workoutDays[wi]||null) : null;
+}
+
+function getWeekDates(baseDate){
+  const start=new Date(baseDate);
+  const mondayOffset=(start.getDay()+6)%7;
+  start.setDate(start.getDate()-mondayOffset);
+  start.setHours(0,0,0,0);
+  return Array.from({length:7},(_,i)=>{
+    const date=new Date(start);
+    date.setDate(start.getDate()+i);
+    return date;
+  });
+}
+
+function getSelectedDate(){
+  return S.weekDates.find(d=>dateKey(d)===S.selectedDateKey)||new Date();
 }
 
 // ==== LOGIN ====
@@ -165,53 +183,68 @@ async function loadDashboard(){
   const now=new Date();
   const name=S.settings?.display_name||S.user.email.split('@')[0];
   document.getElementById('dash-greet').textContent=`Olá, ${name}! 👋`;
-  document.getElementById('dash-date').textContent=fmtDate(now);
+  S.weekDates=getWeekDates(now);
+  if(!S.selectedDateKey || !S.weekDates.some(d=>dateKey(d)===S.selectedDateKey)){
+    S.selectedDateKey=td();
+  }
+  document.getElementById('dash-date').textContent=fmtDate(getSelectedDate());
 
   const tpl=S.templates.find(t=>t.id===S.settings.workout_template_id);
   if(tpl){
     document.getElementById('dash-program-badge').textContent=tpl.name;
     S.workoutDays=await DB.getTemplateDays(tpl.id);
-    const todayDay=getTodayWorkoutDay(tpl,now);
-    S.todayWorkoutDayId=todayDay?.id||null;
-    if(!S.workoutDays.some(d=>d.id===S.selectedWorkoutDayId)){
-      S.selectedWorkoutDayId=S.todayWorkoutDayId||null;
-    }
     renderWorkoutDayTabs();
-    if(S.selectedWorkoutDayId) await loadWorkoutDayById(S.selectedWorkoutDayId);
-    else {S.todaySlots=[];renderRest();}
+    await loadSelectedDay();
   }
 
   const mp=S.mealPlans.find(p=>p.id===S.settings.meal_plan_id);
   if(mp){S.todayMeals=mp.meals||[];renderMeals();}
 
-  try{const prog=await DB.getProgress(S.user.id,td());S.progress=new Set(prog.map(p=>`${p.item_type}:${p.item_key}`));}catch{S.progress=new Set();}
+  try{
+    const prog=await DB.getProgress(S.user.id,S.selectedDateKey);
+    S.progress=new Set(prog.map(p=>`${p.item_type}:${p.item_key}`));
+  }catch{S.progress=new Set();}
   applyDoneStates();updateProgress();
 }
 
 function renderWorkoutDayTabs(){
   const el=document.getElementById('wk-day-tabs');
   if(!el) return;
-  if(!S.workoutDays.length){ el.innerHTML=''; return; }
-  el.innerHTML=S.workoutDays.map(day=>{
-    const active=day.id===S.selectedWorkoutDayId?'active':'';
-    const today=day.id===S.todayWorkoutDayId?'today':'';
-    const label=day.id===S.todayWorkoutDayId?'Hoje':`Dia ${day.day_number}`;
-    return `<button class="wk-day-tab ${active} ${today}" onclick="App.selectWorkoutDay('${day.id}')"><small>${label}</small><strong>${day.name}</strong></button>`;
+  if(!S.weekDates.length){ el.innerHTML=''; return; }
+  const todayKey=td();
+  el.innerHTML=S.weekDates.map(day=>{
+    const key=dateKey(day);
+    const active=key===S.selectedDateKey?'active':'';
+    const today=key===todayKey?'today':'';
+    const short=WDSHORT[(day.getDay()+6)%7];
+    const label=key===todayKey?'Hoje':short;
+    return `<button class="wk-day-tab ${active} ${today}" onclick="App.selectWorkoutDay('${key}')"><small>${label}</small><strong>${String(day.getDate()).padStart(2,'0')}/${String(day.getMonth()+1).padStart(2,'0')}</strong></button>`;
   }).join('');
 }
 
-async function loadWorkoutDayById(dayId){
-  const day=S.workoutDays.find(d=>d.id===dayId);
-  if(!day){ renderRest(); return; }
-  S.selectedWorkoutDayId=dayId;
+async function loadSelectedDay(){
+  const selectedDate=getSelectedDate();
+  document.getElementById('dash-date').textContent=fmtDate(selectedDate);
+  const tpl=S.templates.find(t=>t.id===S.settings.workout_template_id);
+  const day=tpl ? getWorkoutDayForDate(tpl,selectedDate) : null;
   renderWorkoutDayTabs();
-  if(!S.daySlotsById[dayId]) S.daySlotsById[dayId]=await DB.getDaySlots(dayId);
-  S.todaySlots=S.daySlotsById[dayId];
-  renderWorkout(day);
+  if(!day){
+    S.todaySlots=[];
+    renderRest(selectedDate);
+    return;
+  }
+  if(!S.daySlotsById[day.id]) S.daySlotsById[day.id]=await DB.getDaySlots(day.id);
+  S.todaySlots=S.daySlotsById[day.id];
+  renderWorkout(day,selectedDate);
 }
 
-async function selectWorkoutDay(dayId){
-  await loadWorkoutDayById(dayId);
+async function selectWorkoutDay(dateStr){
+  S.selectedDateKey=dateStr;
+  try{
+    const prog=await DB.getProgress(S.user.id,S.selectedDateKey);
+    S.progress=new Set(prog.map(p=>`${p.item_type}:${p.item_key}`));
+  }catch{S.progress=new Set();}
+  await loadSelectedDay();
   applyDoneStates();
   updateProgress();
 }
@@ -223,9 +256,9 @@ function renderMeals(){
   }).join('');
 }
 
-function renderWorkout(day){
-  const isToday=day.id===S.todayWorkoutDayId;
-  document.getElementById('wk-title').textContent=isToday?'💪 Treino do Dia':'💪 Seus Treinos';
+function renderWorkout(day,selectedDate){
+  const isToday=dateKey(selectedDate)===td();
+  document.getElementById('wk-title').textContent=isToday?'💪 Treino do Dia':'💪 Treino do Dia Selecionado';
   let h=`<div class="wk-day-hdr"><h4>${day.name}</h4><p>${day.notes||''}</p></div>`;
   h+=S.todaySlots.filter(s=>s.exercise).map(s=>{
     const ex=s.exercise;const k=`exercise:${s.id}`;const d=S.progress.has(k);
@@ -235,9 +268,10 @@ function renderWorkout(day){
   document.getElementById('wk-area').innerHTML=h;
 }
 
-function renderRest(){
+function renderRest(selectedDate){
+  const isToday=dateKey(selectedDate)===td();
   document.getElementById('wk-title').textContent='😴 Dia de Descanso';
-  document.getElementById('wk-area').innerHTML=`<div class="rest-day"><div class="ri">🧘‍♀️</div><h3>Dia de Descanso</h3><p>Hoje é dia de recuperação! Hidrate, alongue e durma bem.</p></div>`;
+  document.getElementById('wk-area').innerHTML=`<div class="rest-day"><div class="ri">🧘‍♀️</div><h3>${isToday?'Dia de Descanso':'Sem treino programado'}</h3><p>${isToday?'Hoje é dia de recuperação! Hidrate, alongue e durma bem.':'Você pode focar na alimentação deste dia e recuperar o treino quando puder.'}</p></div>`;
 }
 
 function applyDoneStates(){
@@ -254,7 +288,7 @@ async function toggle(el){
   if(done){S.progress.delete(key);el.classList.remove('done');el.querySelector('.chk').textContent='';}
   else{S.progress.add(key);el.classList.add('done');el.querySelector('.chk').textContent='✓';}
   updateProgress();
-  try{if(done)await DB.removeProgress(S.user.id,td(),type,id);else await DB.addProgress(S.user.id,td(),type,id);}catch(e){console.error(e);}
+  try{if(done)await DB.removeProgress(S.user.id,S.selectedDateKey,type,id);else await DB.addProgress(S.user.id,S.selectedDateKey,type,id);}catch(e){console.error(e);}
 }
 
 function updateProgress(){
