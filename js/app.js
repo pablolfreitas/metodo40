@@ -270,8 +270,15 @@ function renderWorkout(day,selectedDate){
 
 function renderRest(selectedDate){
   const isToday=dateKey(selectedDate)===td();
+  const isWeekend=selectedDate.getDay()===0 || selectedDate.getDay()===6;
+  const title=isToday?'Dia de Descanso':'Sem treino programado';
+  const message=isWeekend
+    ? 'Aproveite para pegar sol com segurança, respirar ar livre, fazer uma caminhada leve e curtir um pouco de natureza. Esse cuidado também faz parte do seu progresso.'
+    : (isToday
+      ? 'Hoje é dia de recuperação! Hidrate, alongue, faça uma caminhada leve e durma bem.'
+      : 'Você pode focar na alimentação deste dia e recuperar o treino quando puder. Se der, faça uma caminhada leve para manter o corpo em movimento.');
   document.getElementById('wk-title').textContent='😴 Dia de Descanso';
-  document.getElementById('wk-area').innerHTML=`<div class="rest-day"><div class="ri">🧘‍♀️</div><h3>${isToday?'Dia de Descanso':'Sem treino programado'}</h3><p>${isToday?'Hoje é dia de recuperação! Hidrate, alongue e durma bem.':'Você pode focar na alimentação deste dia e recuperar o treino quando puder.'}</p></div>`;
+  document.getElementById('wk-area').innerHTML=`<div class="rest-day"><div class="ri">🧘‍♀️</div><h3>${title}</h3><p>${message}</p></div>`;
 }
 
 function applyDoneStates(){
