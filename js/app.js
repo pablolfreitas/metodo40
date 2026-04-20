@@ -20,6 +20,7 @@ const WD=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira'
 const MN=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const td=()=>new Date().toISOString().split('T')[0];
 const fmtDate=d=>`${WD[d.getDay()]}, ${d.getDate()} de ${MN[d.getMonth()]}`;
+let authSyncId = 0;
 function setLoginBusy(isBusy){
   const btn=document.getElementById('login-btn');
   if(!btn) return;
@@ -29,13 +30,26 @@ function setLoginBusy(isBusy){
 
 // ==== INIT ====
 async function init(){
-  DB.onAuth(async(_,session)=>{
-    S.user=session?.user||null;
-    if(S.user) await afterLogin(); else showPage('login');
+  DB.onAuth((event,session)=>{
+    if(event==='INITIAL_SESSION') return;
+    setTimeout(()=>{ syncSession(session); },0);
   });
   const session=await DB.getSession();
+  await syncSession(session);
+}
+
+async function syncSession(session){
+  const syncId=++authSyncId;
   S.user=session?.user||null;
-  if(S.user) await afterLogin(); else showPage('login');
+  if(!S.user){
+    S.settings=null;
+    S.isAdmin=false;
+    setLoginBusy(false);
+    showPage('login');
+    return;
+  }
+  await afterLogin();
+  if(syncId!==authSyncId) return;
 }
 
 async function afterLogin(){
@@ -93,12 +107,7 @@ async function login(e){
   try{
     const data=await DB.signIn(email,pass);
     const user=data?.session?.user||data?.user||null;
-
-    // Nao dependa apenas do evento de auth para seguir a navegacao.
-    if(user){
-      S.user=user;
-      await afterLogin();
-    }
+    if(!user) throw new Error('Sessão não iniciada.');
   }catch(err){
     console.error('login:',err);
     errEl.textContent=err.message?.includes('Invalid')?'Email ou senha incorretos.':(err.message||'Erro ao entrar.');
