@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="description" content="Método 40+ — Treino e Alimentação para Mulheres 40+">
+  <meta name="theme-color" content="#B8816F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Método 40+</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="page-login" class="page login-page active">
+  <div class="login-box">
+    <div class="login-logo">40+</div>
+    <h1>Método 40+</h1>
+    <p class="tagline">Treino e alimentação para mulheres que querem se sentir bem ✨</p>
+    <div class="login-error" id="login-error"></div>
+    <form class="login-form" id="login-form" onsubmit="App.login(event)">
+      <input class="login-input" type="email" id="login-email" placeholder="Seu email" required autocomplete="email">
+      <input class="login-input" type="password" id="login-password" placeholder="Sua senha" required autocomplete="current-password">
+      <button class="login-btn" type="submit" id="login-btn">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="page-setup" class="page setup-page">
+  <h2>Bem-vinda! 🌸</h2>
+  <p class="setup-sub">Preencha seus dados para começar.</p>
+  <div class="setup-sec">
+    <h3>Seu nome</h3>
+    <input class="setup-name" id="setup-name" placeholder="Como quer ser chamada?" maxlength="60">
+    <p class="setup-name-hint">Esse nome aparecerá no seu painel</p>
+  </div>
+  <div class="setup-sec">
+    <h3>Nível</h3>
+    <div class="lvl-tabs" id="lvl-tabs"></div>
+  </div>
+  <div class="setup-sec">
+    <h3>Programa de Treino</h3>
+    <div id="prog-list"></div>
+  </div>
+  <div class="setup-sec">
+    <h3>Plano Alimentar</h3>
+    <div id="meal-list-setup"></div>
+  </div>
+  <button class="setup-btn" id="setup-btn" disabled onclick="App.saveSetup()">Começar Minha Transformação →</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page dash-page">
+  <div class="dash-hdr">
+    <div class="dash-hdr-top">
+      <span class="dash-greet" id="dash-greet">Olá! 👋</span>
+      <span style="font-size:.8rem;opacity:.8" id="dash-program-badge"></span>
+    </div>
+    <div class="dash-date" id="dash-date"></div>
+    <div class="dash-prog-row">
+      <div class="prog-circ"><svg viewBox="0 0 44 44"><circle class="track" cx="22" cy="22" r="18"/><circle class="fill" id="prog-arc" cx="22" cy="22" r="18" stroke-dasharray="113.1" stroke-dashoffset="113.1"/></svg><span class="prog-pct" id="prog-pct">0%</span></div>
+      <div class="dash-prog-txt" id="dash-prog-txt">Carregando...</div>
+    </div>
+  </div>
+  <div class="dash-body">
+    <div class="dash-sec"><div class="dash-sec-title">🍽️ Alimentação</div><div id="meal-list"><div class="spinner"></div></div></div>
+    <div class="dash-sec"><div class="dash-sec-title" id="wk-title">💪 Treino do Dia</div><div id="wk-area"><div class="spinner"></div></div></div>
+    <div class="dash-sec"><div class="motiv-card"><div class="motiv-i" id="motiv-i">✨</div><p id="motiv-txt">Cada dia é uma nova chance de evoluir.</p></div></div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div id="page-chat" class="page chat-page">
+  <div class="chat-hdr">
+    <button class="sett-back" onclick="App.nav('dashboard')">←</button>
+    <h2>Suporte / Chat</h2>
+  </div>
+  <div class="chat-msgs" id="chat-msgs"></div>
+  <div class="chat-input-row">
+    <textarea class="chat-input" id="chat-input" placeholder="Escreva sua mensagem..." rows="1"></textarea>
+    <button class="chat-send" onclick="App.sendMsg()">→</button>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="page-settings" class="page sett-page">
+  <div class="sett-hdr">
+    <button class="sett-back" onclick="App.nav('dashboard')">←</button>
+    <h2>Configurações</h2>
+  </div>
+  <div class="sett-body">
+    <div class="sett-card">
+      <label>Nome</label>
+      <input id="sett-name" placeholder="Seu nome">
+      <button class="ch-btn" onclick="App.saveName()">Salvar Nome</button>
+    </div>
+    <div class="sett-card">
+      <label>Programa Atual</label>
+      <h4 id="sett-prog">—</h4>
+      <p id="sett-prog-desc"></p>
+      <button class="ch-btn" onclick="App.goSetup()">Trocar Programa</button>
+    </div>
+    <div class="sett-card">
+      <label>Plano Alimentar</label>
+      <h4 id="sett-meal">—</h4>
+      <button class="ch-btn" onclick="App.goSetup()">Trocar Plano</button>
+    </div>
+    <div class="sett-card">
+      <label>Alterar Senha</label>
+      <input id="sett-newpass" type="password" placeholder="Nova senha (mín. 6 caracteres)">
+      <button class="ch-btn" onclick="App.changePass()">Alterar Senha</button>
+    </div>
+    <div class="sett-card">
+      <label>Resetar Progresso</label>
+      <p>Apagar todo o progresso diário e começar do zero.</p>
+      <button class="ch-btn danger" onclick="App.resetProgress()">Resetar Tudo</button>
+    </div>
+    <button class="logout-btn" onclick="App.logout()">Sair da Conta</button>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="page-admin" class="page admin-page">
+  <div class="admin-hdr"><h2>👑 Painel Administrativo</h2></div>
+  <div class="admin-body" id="admin-body">
+    <input class="admin-search" id="admin-search" placeholder="Buscar aluna..." oninput="App.filterStudents()">
+    <div id="student-list"><div class="spinner"></div></div>
+  </div>
+  <div class="admin-detail" id="admin-detail" style="display:none">
+    <div class="admin-detail-hdr">
+      <button class="sett-back" onclick="App.backToList()">←</button>
+      <h3 id="detail-name">Aluna</h3>
+    </div>
+    <div class="detail-card"><label>Email</label><div class="val" id="detail-email"></div></div>
+    <div class="detail-card"><label>Programa</label><div class="val" id="detail-prog"></div></div>
+    <div class="detail-card"><label>Plano Alimentar</label><div class="val" id="detail-meal"></div></div>
+    <div class="detail-card"><label>Progresso Hoje</label><div class="val" id="detail-progress"></div></div>
+    <div style="margin-top:16px">
+      <h3 style="font-size:1rem;margin-bottom:10px">💬 Chat</h3>
+      <div id="admin-chat-msgs" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+      <div class="chat-input-row" style="padding:0;border:none">
+        <textarea class="chat-input" id="admin-chat-input" placeholder="Responder..." rows="1"></textarea>
+        <button class="chat-send" onclick="App.adminSendMsg()">→</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav" id="bottom-nav" style="display:none">
+  <div class="nav-item active" onclick="App.nav('dashboard')" data-nav="dashboard"><span class="nav-icon">📋</span>Hoje</div>
+  <div class="nav-item" onclick="App.nav('chat')" data-nav="chat"><span class="nav-icon">💬</span>Chat</div>
+  <div class="nav-item" onclick="App.nav('settings')" data-nav="settings"><span class="nav-icon">⚙️</span>Config</div>
+  <div class="nav-item" onclick="App.nav('admin')" data-nav="admin" id="nav-admin" style="display:none"><span class="nav-icon">👑</span>Admin</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
